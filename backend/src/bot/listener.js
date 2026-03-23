@@ -230,6 +230,10 @@ function initListener(io) {
     };
 
     io.to(`channel:${message.channelId}`).emit('new_message', payload);
+    const hasMentions = message.mentions?.everyone || (message.mentions?.users?.size > 0);
+    if (hasMentions) {
+      io.to(`guild:${message.guildId}`).except(`channel:${message.channelId}`).emit('new_message', payload);
+    }
   });
 
   client.on(Events.MessagePollVoteAdd, async (pollAnswer) => {

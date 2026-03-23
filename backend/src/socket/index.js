@@ -48,6 +48,9 @@ function initSocket(server, sessionMiddleware) {
     }
 
     socket.accessibleGuildIds = new Set(accessibleGuildIds);
+    for (const gid of accessibleGuildIds) {
+      socket.join(`guild:${gid}`);
+    }
 
     const user = db.prepare(`SELECT id, username FROM users WHERE id = ?`)
       .get(session.userId);
