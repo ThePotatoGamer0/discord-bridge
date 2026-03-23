@@ -189,6 +189,47 @@ async function formatMessageWithThread(m, memberMap, db) {
   return base;
 }
 
+const DISCORD_EPOCH = 1420070400000;
+
+function snowflakeToTimestamp(id) {
+  if (!id) return null;
+  try {
+    return Number((BigInt(id) >> 22n) + BigInt(DISCORD_EPOCH));
+  } catch {
+    return null;
+  }
+}
+
+// GET /channels/last-per-channel?guildId=... — last message id/timestamp per channel (for unread polling)
+router.get('/last-per-channel', requireVerified, async (req, res) => {
+  try {
+    const guildId = req.query.guildId;
+    if (!guildId) return res.status(400).json({ error: 'guildId is required' });
+
+    const { hasAccessToGuild } = require('../bot/membership');
+    if (!(await hasAccessToGuild(req.session.userId, guildId))) {
+      return res.status(403).json({ error: 'Access denied to this server' });
+    }
+
+    const guild = await client.guilds.fetch(guildId);
+    const channels = await guild.channels.fetch();
+
+    const result = {};
+    for (const [id, ch] of channels) {
+      if (!ch?.isTextBased?.() || ch.isThread?.()) continue;
+      const lastId = ch.lastMessageId ?? null;
+      result[id] = {
+        lastMessageId: lastId,
+        lastMessageTimestamp: lastId ? snowflakeToTimestamp(lastId) : null,
+      };
+    }
+    return res.json({ channels: result });
+  } catch (err) {
+    console.error('Last-per-channel error:', err);
+    return res.status(500).json({ error: 'Could not fetch channel updates.' });
+  }
+});
+
 // GET /channels?guildId=...
 router.get('/', requireVerified, async (req, res) => {
   try {

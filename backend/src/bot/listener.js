@@ -205,6 +205,10 @@ function initListener(io) {
       }
     }
 
+    const mentionUserIds = message.mentions?.users ? [...message.mentions.users.keys()] : [];
+    const mentionEveryone = message.mentions?.everyone ?? false;
+    const hasMentions = mentionEveryone || mentionUserIds.length > 0 || (message.mentions?.roles?.size > 0);
+
     const payload = {
       id: message.id,
       channelId: message.channelId,
@@ -226,11 +230,12 @@ function initListener(io) {
       thread: threadPayload,
       reactions: [],
       siteUser: log ? { username: log.username, id: log.site_user_id } : null,
-      timestamp: message.createdTimestamp
+      timestamp: message.createdTimestamp,
+      mentionUserIds,
+      mentionEveryone,
     };
 
     io.to(`channel:${message.channelId}`).emit('new_message', payload);
-    const hasMentions = message.mentions?.everyone || (message.mentions?.users?.size > 0);
     if (hasMentions) {
       io.to(`guild:${message.guildId}`).except(`channel:${message.channelId}`).emit('new_message', payload);
     }

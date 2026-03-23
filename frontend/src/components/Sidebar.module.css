@@ -98,6 +98,7 @@
   text-align: left;
   transition: background 0.1s, color 0.1s;
   cursor: pointer;
+  position: relative;
 }
 
 .channel:hover {
@@ -108,6 +109,27 @@
 .channel.active {
   background: var(--bg-hover);
   color: var(--text-main);
+}
+
+.channel.unread {
+  color: var(--text-main);
+  padding-right: 18px;
+}
+
+.channel.unread .hash {
+  color: var(--text-main);
+}
+
+.unreadDot {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  flex-shrink: 0;
 }
 
 .channel.voice {

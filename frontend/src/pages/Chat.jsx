@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrentGuild } from '../context/CurrentGuildContext';
 import ServerSidebar from '../components/ServerSidebar';
@@ -30,6 +30,10 @@ export default function Chat() {
   const [guildRoles, setGuildRoles]         = useState([]);
   const [membersSections, setMembersSections] = useState([]);
   const [membersSidebarVisible, setMembersSidebarVisible] = useState(true);
+  const [unreadChannels, setUnreadChannels] = useState(() => new Set());
+  const [lastReadTimestamp, setLastReadTimestamp] = useState(() => ({}));
+  const lastReadRef = useRef({});
+  lastReadRef.current = lastReadTimestamp;
 
   // Fetch servers on mount
   useEffect(() => {
@@ -63,6 +67,8 @@ export default function Chat() {
 
     setActiveChannel(null);
     setMessages([]);
+    setUnreadChannels(new Set());
+    setLastReadTimestamp({});
     setGuildId(activeServer.id);
     setGuildName(activeServer.name);
 
@@ -86,6 +92,53 @@ export default function Chat() {
     setCurrentGuildId(activeServer?.id ?? '');
   }, [activeServer?.id, setCurrentGuildId]);
 
+  // Poll for new messages in other channels (unread indicators)
+  useEffect(() => {
+    if (!guildId || !channels.length) return;
+
+    const poll = async () => {
+      try {
+        const r = await fetch(apiUrl(`/channels/last-per-channel?guildId=${guildId}`), { credentials: 'include' });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.channels) return;
+
+        const readAt = lastReadRef.current;
+        const activeId = activeChannel?.id;
+        const updates = {};
+
+        setUnreadChannels(prev => {
+          const next = new Set(prev);
+          for (const [chId, info] of Object.entries(data.channels)) {
+            const lastTs = info?.lastMessageTimestamp;
+            if (!lastTs) continue;
+            const known = readAt[chId];
+            if (known === undefined) {
+              updates[chId] = lastTs;
+              continue;
+            }
+            if (chId === activeId) continue;
+            if (lastTs > known) next.add(chId);
+          }
+          return next;
+        });
+
+        if (Object.keys(updates).length > 0) {
+          setLastReadTimestamp(prev => ({ ...prev, ...updates }));
+        }
+      } catch (_) { /* ignore */ }
+    };
+
+    const interval = setInterval(poll, 30000);
+    const onFocus = () => poll();
+    window.addEventListener('focus', onFocus);
+    poll();
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [guildId, channels.length, activeChannel?.id]);
+
   useEffect(() => {
     const s = io(API_BASE || undefined, { withCredentials: true });
     setSocket(s);
@@ -103,13 +156,17 @@ export default function Chat() {
     if (!socket) return;
     const handler = (msg) => {
       const inActiveChannel = msg.channelId === activeChannel?.id;
-      if (inActiveChannel) setMessages(prev => [...prev, msg]);
+      if (inActiveChannel) {
+        setMessages(prev => [...prev, msg]);
+        setLastReadTimestamp(prev => ({
+          ...prev,
+          [msg.channelId]: Math.max(prev[msg.channelId] ?? 0, msg.timestamp ?? 0),
+        }));
+      } else if (msg.siteUser?.id !== user?.id) setUnreadChannels(prev => new Set(prev).add(msg.channelId));
       if (msg.siteUser?.id === user?.id) return;
-      const content = msg.content ?? '';
       const discordId = user?.discord?.discord_id;
-      const directMention = discordId && /<@!?(\d+)>/.test(content) && new RegExp(`<@!?${discordId}>`).test(content);
-      const everyoneHere = /@(?:everyone|here)(?!\S)/.test(content);
-      const mentioned = directMention || everyoneHere;
+      const mentioned = msg.mentionEveryone ||
+        (discordId && Array.isArray(msg.mentionUserIds) && msg.mentionUserIds.includes(discordId));
       if (mentioned) playMentionSound();
       else if (inActiveChannel) playMessageSound();
     };
@@ -220,6 +277,7 @@ export default function Chat() {
 
   const selectChannel = useCallback(async (channel) => {
     setActiveChannel(channel);
+    setUnreadChannels(prev => { const s = new Set(prev); s.delete(channel.id); return s; });
     setLoadingMsgs(true);
     setMessages([]);
     setHasMore(false);
@@ -236,7 +294,11 @@ export default function Chat() {
     const msgData   = await msgRes.json();
     const reactData = await reactRes.json();
 
-    if (msgData.messages)   setMessages(msgData.messages);
+    if (msgData.messages) {
+      setMessages(msgData.messages);
+      const latest = msgData.messages.reduce((max, m) => Math.max(max, m.timestamp ?? 0), 0);
+      setLastReadTimestamp(prev => ({ ...prev, [channel.id]: latest || Date.now() }));
+    }
     if (reactData.reactions) setMyReactions(reactData.reactions);
     setHasMore(msgData.hasMore ?? false);
     setLoadingMsgs(false);
@@ -355,6 +417,7 @@ export default function Chat() {
         channels={channels}
         activeChannel={activeChannel}
         onSelectChannel={selectChannel}
+        unreadChannels={unreadChannels}
         user={user}
         connected={connected}
         onLogout={logout}

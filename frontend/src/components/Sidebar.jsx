@@ -65,7 +65,7 @@ async function copyImageToClipboard(src) {
   }
 }
 
-export default function Sidebar({ guildName, guildId, channels, activeChannel, onSelectChannel, user, connected, onLogout }) {
+export default function Sidebar({ guildName, guildId, channels, activeChannel, onSelectChannel, unreadChannels = new Set(), user, connected, onLogout }) {
   const { showContextMenu } = useContextMenu();
 
   const categories = channels
@@ -146,14 +146,16 @@ export default function Sidebar({ guildName, guildId, channels, activeChannel, o
   };
 
   function ChannelButton({ channel, nested }) {
+    const unread = unreadChannels.has(channel.id);
     return (
       <button
-        className={`${styles.channel} ${nested ? styles.channelNested : ''} ${activeChannel?.id === channel.id ? styles.active : ''} ${isVoice(channel.type) ? styles.voice : ''}`}
+        className={`${styles.channel} ${nested ? styles.channelNested : ''} ${activeChannel?.id === channel.id ? styles.active : ''} ${unread ? styles.unread : ''} ${isVoice(channel.type) ? styles.voice : ''}`}
         onClick={() => onSelectChannel(channel)}
         onContextMenu={(e) => handleChannelContextMenu(e, channel)}
       >
         <ChannelIcon type={channel.type} />
         <span className={styles.channelName}>{channel.name}</span>
+        {unread && <span className={styles.unreadDot} aria-hidden />}
       </button>
     );
   }
