@@ -54,7 +54,7 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 const publicDir = path.join(__dirname, '../public');
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
-  app.get('/(.*)', (req, res, next) => {
+  app.get('/{*splat}', (req, res, next) => {
     if (req.method !== 'GET' || req.path.startsWith('/auth') || req.path.startsWith('/channels') ||
         req.path.startsWith('/emojis') || req.path.startsWith('/reactions') || req.path.startsWith('/members') ||
         req.path.startsWith('/servers') || req.path.startsWith('/socket.io') || req.path.startsWith('/linked-role') ||
