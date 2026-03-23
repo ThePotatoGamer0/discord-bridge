@@ -102,17 +102,16 @@ export default function Chat() {
   useEffect(() => {
     if (!socket) return;
     const handler = (msg) => {
-      if (msg.channelId === activeChannel?.id) {
-        setMessages(prev => [...prev, msg]);
-        if (msg.siteUser?.id === user?.id) return;
-        const content = msg.content ?? '';
-        const discordId = user?.discord?.discord_id;
-        const directMention = discordId && /<@!?(\d+)>/.test(content) && new RegExp(`<@!?${discordId}>`).test(content);
-        const everyoneHere = /@(?:everyone|here)(?!\S)/.test(content);
-        const mentioned = directMention || everyoneHere;
-        if (mentioned) playMentionSound();
-        else playMessageSound();
-      }
+      const inActiveChannel = msg.channelId === activeChannel?.id;
+      if (inActiveChannel) setMessages(prev => [...prev, msg]);
+      if (msg.siteUser?.id === user?.id) return;
+      const content = msg.content ?? '';
+      const discordId = user?.discord?.discord_id;
+      const directMention = discordId && /<@!?(\d+)>/.test(content) && new RegExp(`<@!?${discordId}>`).test(content);
+      const everyoneHere = /@(?:everyone|here)(?!\S)/.test(content);
+      const mentioned = directMention || everyoneHere;
+      if (mentioned) playMentionSound();
+      else if (inActiveChannel) playMessageSound();
     };
     socket.on('new_message', handler);
     return () => socket.off('new_message', handler);

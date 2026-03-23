@@ -1,9 +1,20 @@
-/** Discord-style notification sounds. Uses /sounds/*.mp3 files (from discord-sounds). */
+/** Discord-style notification sounds. Mention takes priority; no overlapping playback. */
 
 const MESSAGE_SRC = '/sounds/message.mp3';
 const MENTION_SRC = '/sounds/mention.mp3';
+const COOLDOWN_MS = 600;
 
+let currentAudio = null;
+let lastPlayedAt = 0;
 let ctx = null;
+
+function stopCurrent() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+}
 
 function getContext() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -28,21 +39,28 @@ function playTone(freq, duration = 0.08) {
 }
 
 function playSound(src, fallback) {
+  stopCurrent();
+  lastPlayedAt = Date.now();
   try {
     const audio = new Audio(src);
+    currentAudio = audio;
     const fallbackFn = () => {
       audio.removeEventListener('error', onError);
+      if (currentAudio === audio) currentAudio = null;
       fallback();
     };
     const onError = fallbackFn;
     audio.addEventListener('error', onError);
+    audio.onended = () => { if (currentAudio === audio) currentAudio = null; };
     audio.play().catch(fallbackFn);
   } catch (_) {
+    currentAudio = null;
     fallback();
   }
 }
 
 export function playMessageSound() {
+  if (Date.now() - lastPlayedAt < COOLDOWN_MS) return;
   playSound(MESSAGE_SRC, () => playTone(800));
 }
 
