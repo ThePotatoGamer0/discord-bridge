@@ -217,7 +217,11 @@ router.get('/', requireVerified, async (req, res) => {
       const results = await guild.members.search({ query: q, limit: 25 });
       const members = [...results.values()].map(serializeMember);
       attachSiteUsers(members);
-      return res.json({ members });
+      const roles = [...guild.roles.cache.values()]
+        .filter((r) => r.name !== '@everyone')
+        .sort((a, b) => b.position - a.position)
+        .map((r) => ({ id: r.id, name: r.name }));
+      return res.json({ members, roles });
     }
 
     await guild.members.fetch({ limit: 200 }).catch(() => {});
@@ -235,7 +239,11 @@ router.get('/', requireVerified, async (req, res) => {
     });
 
     const allMembers = out.flatMap((s) => s.members);
-    return res.json({ sections: out, members: allMembers });
+    const roles = [...guild.roles.cache.values()]
+      .filter((r) => r.name !== '@everyone')
+      .sort((a, b) => b.position - a.position)
+      .map((r) => ({ id: r.id, name: r.name }));
+    return res.json({ sections: out, members: allMembers, roles });
   } catch (err) {
     console.error('Members error:', err);
     return res.status(500).json({ error: 'Could not fetch members.' });

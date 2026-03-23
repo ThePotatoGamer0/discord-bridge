@@ -4,7 +4,7 @@ import MessageInput from './MessageInput';
 import styles from './MessagePane.module.css';
 
 export default function MessagePane({
-  channel, channels = [], guildId = '', guildMembers = [], messages, loading, loadingMore, hasMore,
+  channel, channels = [], guildId = '', guildMembers = [], guildRoles = [], messages, loading, loadingMore, hasMore,
   onLoadMore, onSend, currentUser, myReactions, onReactionToggle, onPollExpired
 }) {
   const channelNameById = useMemo(() => {
@@ -12,6 +12,12 @@ export default function MessagePane({
     for (const c of channels) m[c.id] = c.name;
     return m;
   }, [channels]);
+
+  const roleNameById = useMemo(() => {
+    const m = Object.create(null);
+    for (const r of guildRoles) m[r.id] = r.name;
+    return m;
+  }, [guildRoles]);
 
   const userDisplayById = useMemo(() => {
     const o = Object.create(null);
@@ -130,6 +136,7 @@ export default function MessagePane({
               guildId={guildId}
               channelNameById={channelNameById}
               userDisplayById={userDisplayById}
+              roleNameById={roleNameById}
               currentUser={currentUser}
               myReactions={myReactions?.[msg.id] ?? []}
               onReactionToggle={onReactionToggle}
@@ -140,7 +147,7 @@ export default function MessagePane({
         <div ref={bottomRef} />
       </div>
 
-      <MessageInput onSend={onSend} channel={channel} channels={channels} guildId={guildId} />
+      <MessageInput onSend={onSend} channel={channel} channels={channels} guildId={guildId} guildRoles={guildRoles} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import MessagePane from '../components/MessagePane';
 import MembersSidebar from '../components/MembersSidebar';
 import { io } from 'socket.io-client';
 import { apiUrl, API_BASE } from '../api';
+import { playMessageSound, playMentionSound } from '../utils/notificationSound';
 import styles from './Chat.module.css';
 
 export default function Chat() {
@@ -26,6 +27,7 @@ export default function Chat() {
   const [hasMore, setHasMore]               = useState(false);
   const [myReactions, setMyReactions]      = useState({});
   const [guildMembers, setGuildMembers]     = useState([]);
+  const [guildRoles, setGuildRoles]         = useState([]);
   const [membersSections, setMembersSections] = useState([]);
   const [membersSidebarVisible, setMembersSidebarVisible] = useState(true);
 
@@ -54,6 +56,7 @@ export default function Chat() {
       setGuildId('');
       setActiveChannel(null);
       setGuildMembers([]);
+      setGuildRoles([]);
       setMembersSections([]);
       return;
     }
@@ -71,6 +74,7 @@ export default function Chat() {
       if (cancelled) return;
       setChannels(chData.channels ?? []);
       setGuildMembers(Array.isArray(memData.members) ? memData.members : []);
+      setGuildRoles(Array.isArray(memData.roles) ? memData.roles : []);
       setMembersSections(Array.isArray(memData.sections) ? memData.sections : []);
     }).catch(() => {});
 
@@ -100,11 +104,16 @@ export default function Chat() {
     const handler = (msg) => {
       if (msg.channelId === activeChannel?.id) {
         setMessages(prev => [...prev, msg]);
+        if (msg.siteUser?.id === user?.id) return;
+        const discordId = user?.discord?.discord_id;
+        const mentioned = discordId && /<@!?(\d+)>/.test(msg.content ?? '') && new RegExp(`<@!?${discordId}>`).test(msg.content);
+        if (mentioned) playMentionSound();
+        else playMessageSound();
       }
     };
     socket.on('new_message', handler);
     return () => socket.off('new_message', handler);
-  }, [socket, activeChannel]);
+  }, [socket, activeChannel, user]);
 
   // Message deleted
   useEffect(() => {
@@ -354,6 +363,7 @@ export default function Chat() {
           channels={channels}
           guildId={guildId}
           guildMembers={guildMembers}
+          guildRoles={guildRoles}
           messages={messages}
           loading={loadingMsgs}
           loadingMore={loadingMore}

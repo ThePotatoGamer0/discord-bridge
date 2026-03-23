@@ -94,7 +94,22 @@ function memberDisplayName(m) {
   return m.nickname ?? m.globalName ?? m.username;
 }
 
-export default function MessageInput({ onSend, channel, channels = [], guildId = '' }) {
+function filterRoleMentionCandidates(roles, query) {
+  if (!roles?.length) return [];
+  const list = roles;
+  if (!query) return list.slice(0, 15);
+  const q = query.toLowerCase();
+  return list
+    .filter((r) => r.name?.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const as = a.name?.toLowerCase().startsWith(q) ? 0 : 1;
+      const bs = b.name?.toLowerCase().startsWith(q) ? 0 : 1;
+      return as - bs;
+    })
+    .slice(0, 15);
+}
+
+export default function MessageInput({ onSend, channel, channels = [], guildId = '', guildRoles = [] }) {
   const [value, setValue]             = useState('');
   const [mention, setMention]         = useState(null);
   const [mentionIdx, setMentionIdx]   = useState(0);
@@ -173,10 +188,25 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
     };
   }, [mention?.kind, mention?.query, guildId]);
 
+  const roleCandidates = useMemo(
+    () => (mention?.kind === 'user'
+      ? filterRoleMentionCandidates(guildRoles, mention.query)
+      : []),
+    [guildRoles, mention?.kind, mention?.query]
+  );
+
+  const userOrRoleCandidates = useMemo(() => {
+    if (mention?.kind !== 'user') return [];
+    const roles = roleCandidates.map((r) => ({ ...r, _type: 'role' }));
+    const users = userCandidates.map((u) => ({ ...u, _type: 'user' }));
+    return [...roles, ...users];
+  }, [mention?.kind, roleCandidates, userCandidates]);
+
   const isSlashSuggest = mention?.kind === 'slash';
   const activeCandidates = mention?.kind === 'channel' ? channelCandidates
     : mention?.kind === 'emoji' ? emojiCandidates
-    : userCandidates;
+    : mention?.kind === 'user' ? userOrRoleCandidates
+    : [];
 
   const syncMention = useCallback((val, cursorPos) => {
     const m = pickActiveMention(val, cursorPos);
@@ -237,8 +267,12 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
     let insertText;
     if (mention.kind === 'emoji') {
       insertText = item.char ?? `<${item.animated ? 'a' : ''}:${item.name}:${item.id}>`;
+    } else if (mention.kind === 'channel') {
+      insertText = `<#${item.id}>`;
+    } else if (mention.kind === 'user' && item._type === 'role') {
+      insertText = `<@&${item.id}>`;
     } else {
-      insertText = mention.kind === 'channel' ? `<#${item.id}>` : `<@${item.id}>`;
+      insertText = `<@${item.id}>`;
     }
     const newVal = v.slice(0, mention.start) + insertText + v.slice(cursorPos);
     setValue(newVal);
@@ -392,7 +426,7 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
             <li className={styles.channelSuggestEmpty}>Searching members…</li>
           ) : showEmpty ? (
             <li className={styles.channelSuggestEmpty}>
-              {mention.kind === 'channel' ? 'No matching channels' : mention.kind === 'emoji' ? 'No matching emojis' : 'No matching members'}
+              {mention.kind === 'channel' ? 'No matching channels' : mention.kind === 'emoji' ? 'No matching emojis' : 'No matching members or roles'}
             </li>
           ) : showEmojiSuggest ? (
             emojiCandidates.map((emoji, i) => (
@@ -441,10 +475,11 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
               </li>
             ))
           ) : (
-            userCandidates.map((m, i) => {
-              const disp = memberDisplayName(m);
+            activeCandidates.map((m, i) => {
+              const isRole = m._type === 'role';
+              const disp = isRole ? m.name : memberDisplayName(m);
               return (
-                <li key={m.id}>
+                <li key={`${isRole ? 'role-' : 'user-'}${m.id}`}>
                   <button
                     type="button"
                     role="option"
@@ -456,9 +491,11 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
                   >
                     <span className={styles.userSuggestAt}>@</span>
                     <span className={styles.channelSuggestName}>{disp}</span>
-                    {m.username && disp !== m.username && (
+                    {isRole ? (
+                      <span className={styles.userSuggestHandle}>Role</span>
+                    ) : m.username && disp !== m.username ? (
                       <span className={styles.userSuggestHandle}>@{m.username}</span>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               );

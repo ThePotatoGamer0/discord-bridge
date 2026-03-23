@@ -296,6 +296,20 @@
   vertical-align: middle;
 }
 
+.roleMention {
+  display: inline;
+  background: rgba(88, 101, 242, 0.2);
+  border: 1px solid rgba(88, 101, 242, 0.4);
+  color: var(--accent);
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: default;
+  user-select: none;
+  vertical-align: middle;
+}
+
 /* ── Poll ───────────────────────────────────────────────── */
 
 .messagePoll {

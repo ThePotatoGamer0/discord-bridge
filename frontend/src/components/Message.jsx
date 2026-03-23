@@ -46,6 +46,15 @@ function formatDate(timestamp) {
 
 // ─── Discord Markdown Parser ──────────────────────────────────────────────
 
+function RoleMention({ roleId, roleNameById }) {
+  const label = roleNameById?.[roleId] ?? 'unknown-role';
+  return (
+    <span className={styles.roleMention} title={`@${label}`}>
+      @{label}
+    </span>
+  );
+}
+
 function ChannelMention({ channelId, channelNameById }) {
   const label = channelNameById?.[channelId] ?? 'unknown-channel';
   return (
@@ -112,10 +121,13 @@ function UserMention({ userId, userDisplayById, guildId }) {
   );
 }
 
-function parseInline(text, keyPrefix = '', channelNameById, userDisplayById, guildId = '') {
+function parseInline(text, keyPrefix = '', channelNameById, userDisplayById, roleNameById = null, guildId = '') {
   if (!text) return null;
 
   const patterns = [
+    { re: /<@&(\d+)>/g, render: (m, key) => (
+      <RoleMention key={key} roleId={m[1]} roleNameById={roleNameById} />
+    )},
     { re: /<@!?(\d+)>/g, render: (m, key) => (
       <UserMention key={key} userId={m[1]} userDisplayById={userDisplayById} guildId={guildId} />
     )},
@@ -162,22 +174,22 @@ function parseInline(text, keyPrefix = '', channelNameById, userDisplayById, gui
       <code key={key} className={styles.inlineCode}>{m[1]}</code>
     )},
     { re: /\*{3}(.+?)\*{3}/g, render: (m, key) => (
-      <strong key={key}><em>{parseInline(m[1], key + 'bi', channelNameById, userDisplayById, guildId)}</em></strong>
+      <strong key={key}><em>{parseInline(m[1], key + 'bi', channelNameById, userDisplayById, roleNameById, guildId)}</em></strong>
     )},
     { re: /\*{2}(.+?)\*{2}/g, render: (m, key) => (
-      <strong key={key}>{parseInline(m[1], key + 'b', channelNameById, userDisplayById, guildId)}</strong>
+      <strong key={key}>{parseInline(m[1], key + 'b', channelNameById, userDisplayById, roleNameById, guildId)}</strong>
     )},
     { re: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, render: (m, key) => (
-      <em key={key}>{parseInline(m[1] ?? m[2], key + 'i', channelNameById, userDisplayById, guildId)}</em>
+      <em key={key}>{parseInline(m[1] ?? m[2], key + 'i', channelNameById, userDisplayById, roleNameById, guildId)}</em>
     )},
     { re: /__(.+?)__/g, render: (m, key) => (
-      <span key={key} className={styles.mdUnderline}>{parseInline(m[1], key + 'u', channelNameById, userDisplayById, guildId)}</span>
+      <span key={key} className={styles.mdUnderline}>{parseInline(m[1], key + 'u', channelNameById, userDisplayById, roleNameById, guildId)}</span>
     )},
     { re: /~~(.+?)~~/g, render: (m, key) => (
-      <del key={key}>{parseInline(m[1], key + 's', channelNameById, userDisplayById, guildId)}</del>
+      <del key={key}>{parseInline(m[1], key + 's', channelNameById, userDisplayById, roleNameById, guildId)}</del>
     )},
     { re: /\|\|(.+?)\|\|/g, render: (m, key) => (
-      <Spoiler key={key}>{parseInline(m[1], key + 'sp', channelNameById, userDisplayById, guildId)}</Spoiler>
+      <Spoiler key={key}>{parseInline(m[1], key + 'sp', channelNameById, userDisplayById, roleNameById, guildId)}</Spoiler>
     )},
   ];
 
@@ -226,9 +238,9 @@ function Spoiler({ children }) {
   );
 }
 
-function renderContent(content, block = true, channelNameById, userDisplayById, guildId = '') {
+function renderContent(content, block = true, channelNameById, userDisplayById, roleNameById = null, guildId = '') {
   if (!content) return null;
-  if (!block) return parseInline(content, 'inline', channelNameById, userDisplayById, guildId);
+  if (!block) return parseInline(content, 'inline', channelNameById, userDisplayById, roleNameById, guildId);
 
   const lines = content.split('\n');
   const result = [];
@@ -263,7 +275,7 @@ function renderContent(content, block = true, channelNameById, userDisplayById, 
       const Tag = `h${level}`;
       result.push(
         <Tag key={key()} className={styles[`heading${level}`]}>
-          {parseInline(headingMatch[2], key(), channelNameById, userDisplayById, guildId)}
+          {parseInline(headingMatch[2], key(), channelNameById, userDisplayById, roleNameById, guildId)}
         </Tag>
       );
       i++;
@@ -276,7 +288,7 @@ function renderContent(content, block = true, channelNameById, userDisplayById, 
       while (i < lines.length) { quoteLines.push(lines[i]); i++; }
       result.push(
         <blockquote key={key()} className={styles.blockquote}>
-          {renderContent(quoteLines.join('\n'), true, channelNameById, userDisplayById, guildId)}
+          {renderContent(quoteLines.join('\n'), true, channelNameById, userDisplayById, roleNameById, guildId)}
         </blockquote>
       );
       continue;
@@ -291,7 +303,7 @@ function renderContent(content, block = true, channelNameById, userDisplayById, 
       }
       result.push(
         <blockquote key={key()} className={styles.blockquote}>
-          {renderContent(quoteLines.join('\n'), true, channelNameById, userDisplayById, guildId)}
+          {renderContent(quoteLines.join('\n'), true, channelNameById, userDisplayById, roleNameById, guildId)}
         </blockquote>
       );
       continue;
@@ -300,7 +312,7 @@ function renderContent(content, block = true, channelNameById, userDisplayById, 
     if (line.startsWith('-# ')) {
       result.push(
         <span key={key()} className={styles.subtext}>
-          {parseInline(line.slice(3), key(), channelNameById, userDisplayById, guildId)}
+          {parseInline(line.slice(3), key(), channelNameById, userDisplayById, roleNameById, guildId)}
         </span>
       );
       i++;
@@ -312,7 +324,7 @@ function renderContent(content, block = true, channelNameById, userDisplayById, 
     } else {
       result.push(
         <span key={key()} style={{ display: 'block' }}>
-          {parseInline(line, key(), channelNameById, userDisplayById, guildId)}
+          {parseInline(line, key(), channelNameById, userDisplayById, roleNameById, guildId)}
         </span>
       );
     }
@@ -622,7 +634,7 @@ function getFieldByKey(fieldsLower, fields, ...keys) {
   return '';
 }
 
-function PollClosureEmbed({ e, channelNameById, userDisplayById, guildId, channelId, messageId, displayName: messageAuthorName }) {
+function PollClosureEmbed({ e, channelNameById, userDisplayById, roleNameById, guildId, channelId, messageId, displayName: messageAuthorName }) {
   const fieldsResult = fieldMap(e.fields);
   const { map: fields, lower: fieldsLower } = fieldsResult;
   const hasRawFields = hasPollClosureFields(fieldsResult);
@@ -678,12 +690,12 @@ function PollClosureEmbed({ e, channelNameById, userDisplayById, guildId, channe
       <div className={styles.pollClosureCard}>
         <div className={styles.pollClosureResult}>
           <div className={styles.pollClosureWinnerRow}>
-            <strong className={styles.pollClosureWinnerText}>{renderContent(winningAnswer, false, channelNameById, userDisplayById, guildId)}</strong>
+            <strong className={styles.pollClosureWinnerText}>{renderContent(winningAnswer, false, channelNameById, userDisplayById, roleNameById, guildId)}</strong>
             <span className={styles.pollClosureTick} aria-hidden>✓</span>
           </div>
           {metaText && (
             <div className={styles.pollClosureMeta}>
-              {renderContent(metaText, false, channelNameById, userDisplayById, guildId)}
+              {renderContent(metaText, false, channelNameById, userDisplayById, roleNameById, guildId)}
             </div>
           )}
         </div>
@@ -711,7 +723,7 @@ function isPollClosureEmbed(e, { messageType } = {}) {
   return e?.author?.name && POLL_CLOSURE_AUTHOR_RE.test(e.author.name);
 }
 
-function Embeds({ embeds, channelNameById, userDisplayById, guildId = '', channelId = '', messageId = '', messageAuthorName = '', messageType }) {
+function Embeds({ embeds, channelNameById, userDisplayById, roleNameById, guildId = '', channelId = '', messageId = '', messageAuthorName = '', messageType }) {
   if (!embeds?.length) return null;
   return (
     <div className={styles.embeds}>
@@ -724,6 +736,7 @@ function Embeds({ embeds, channelNameById, userDisplayById, guildId = '', channe
               e={e}
               channelNameById={channelNameById}
               userDisplayById={userDisplayById}
+              roleNameById={roleNameById}
               guildId={guildId}
               channelId={channelId}
               messageId={messageId}
@@ -767,7 +780,7 @@ function Embeds({ embeds, channelNameById, userDisplayById, guildId = '', channe
           return (
             <div key={embedKey} className={styles.richEmbed} style={{ borderLeftColor: borderColor }}>
               {e.provider?.name && (
-                <div className={styles.embedProvider}>{renderContent(e.provider.name, false, channelNameById, userDisplayById, guildId)}</div>
+                <div className={styles.embedProvider}>{renderContent(e.provider.name, false, channelNameById, userDisplayById, roleNameById, guildId)}</div>
               )}
               {e.author?.name && (
                 <div className={styles.embedAuthor}>
@@ -776,27 +789,27 @@ function Embeds({ embeds, channelNameById, userDisplayById, guildId = '', channe
                   )}
                   {e.author.url ? (
                     <a href={e.author.url} target="_blank" rel="noopener noreferrer" className={styles.embedAuthorName}>
-                      {renderContent(e.author.name, false, channelNameById, userDisplayById, guildId)}
+                      {renderContent(e.author.name, false, channelNameById, userDisplayById, roleNameById, guildId)}
                     </a>
                   ) : (
-                    <span className={styles.embedAuthorName}>{renderContent(e.author.name, false, channelNameById, userDisplayById, guildId)}</span>
+                    <span className={styles.embedAuthorName}>{renderContent(e.author.name, false, channelNameById, userDisplayById, roleNameById, guildId)}</span>
                   )}
                 </div>
               )}
               {e.title && (
                 <a href={e.url ?? '#'} target="_blank" rel="noopener noreferrer" className={styles.embedTitle}>
-                  {renderContent(e.title, false, channelNameById, userDisplayById, guildId)}
+                  {renderContent(e.title, false, channelNameById, userDisplayById, roleNameById, guildId)}
                 </a>
               )}
               {e.description && (
-                <div className={styles.embedDescription}>{renderContent(e.description, true, channelNameById, userDisplayById, guildId)}</div>
+                <div className={styles.embedDescription}>{renderContent(e.description, true, channelNameById, userDisplayById, roleNameById, guildId)}</div>
               )}
               {e.fields?.length > 0 && (
                 <div className={styles.embedFields}>
                   {e.fields.map((f, fi) => (
                     <div key={f.name ? `field-${f.name}-${fi}` : `field-${fi}`} className={`${styles.embedField} ${f.inline ? styles.embedFieldInline : ''}`}>
-                      <div className={styles.embedFieldName}>{renderContent(f.name, false, channelNameById, userDisplayById, guildId)}</div>
-                      <div className={styles.embedFieldValue}>{renderContent(f.value, true, channelNameById, userDisplayById, guildId)}</div>
+                      <div className={styles.embedFieldName}>{renderContent(f.name, false, channelNameById, userDisplayById, roleNameById, guildId)}</div>
+                      <div className={styles.embedFieldValue}>{renderContent(f.value, true, channelNameById, userDisplayById, roleNameById, guildId)}</div>
                     </div>
                   ))}
                 </div>
@@ -810,7 +823,7 @@ function Embeds({ embeds, channelNameById, userDisplayById, guildId = '', channe
               {e.footer?.text && (
                 <div className={styles.embedFooter}>
                   {e.footer.iconURL && <img src={e.footer.iconURL} alt="" className={styles.embedFooterIcon} />}
-                  <span>{renderContent(e.footer.text, false, channelNameById, userDisplayById, guildId)}</span>
+                  <span>{renderContent(e.footer.text, false, channelNameById, userDisplayById, roleNameById, guildId)}</span>
                 </div>
               )}
             </div>
@@ -828,7 +841,7 @@ const MESSAGE_TYPE_USER_JOIN = 7;
 // ─── Message ──────────────────────────────────────────────────────────────
 
 export default function Message({
-  message, grouped, isOwn, channelId, guildId = '', channelNameById, userDisplayById, currentUser, myReactions = [], onReactionToggle, onPollExpired
+  message, grouped, isOwn, channelId, guildId = '', channelNameById, userDisplayById, roleNameById = null, currentUser, myReactions = [], onReactionToggle, onPollExpired
 }) {
   const { showContextMenu } = useContextMenu();
   const { showEmojiPicker } = useEmojiPicker();
@@ -905,7 +918,7 @@ export default function Message({
       {message.thread && <MessageThreadLink thread={message.thread} />}
       {message.content && (
         <div className={`${styles.text} ${isOwn ? styles.own : ''} ${isEmojiOnlyFew(message.content) ? styles.emojiOnly : ''}`}>
-          {renderContent(message.content, true, channelNameById, userDisplayById, guildId)}
+          {renderContent(message.content, true, channelNameById, userDisplayById, roleNameById, guildId)}
         </div>
       )}
       <Attachments attachments={message.attachments} />
@@ -914,6 +927,7 @@ export default function Message({
         embeds={message.embeds}
         channelNameById={channelNameById}
         userDisplayById={userDisplayById}
+        roleNameById={roleNameById}
         guildId={guildId}
         channelId={channelId}
         messageId={message.id}
