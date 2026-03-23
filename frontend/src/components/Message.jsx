@@ -46,6 +46,15 @@ function formatDate(timestamp) {
 
 // ─── Discord Markdown Parser ──────────────────────────────────────────────
 
+function EveryoneHereMention({ which }) {
+  const label = which === 'everyone' ? 'everyone' : 'here';
+  return (
+    <span className={styles.roleMention} title={`@${label}`}>
+      @{label}
+    </span>
+  );
+}
+
 function RoleMention({ roleId, roleNameById }) {
   const label = roleNameById?.[roleId] ?? 'unknown-role';
   return (
@@ -125,6 +134,9 @@ function parseInline(text, keyPrefix = '', channelNameById, userDisplayById, rol
   if (!text) return null;
 
   const patterns = [
+    { re: /@(everyone|here)(?!\S)/g, render: (m, key) => (
+      <EveryoneHereMention key={key} which={m[1]} />
+    )},
     { re: /<@&(\d+)>/g, render: (m, key) => (
       <RoleMention key={key} roleId={m[1]} roleNameById={roleNameById} />
     )},

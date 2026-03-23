@@ -105,8 +105,11 @@ export default function Chat() {
       if (msg.channelId === activeChannel?.id) {
         setMessages(prev => [...prev, msg]);
         if (msg.siteUser?.id === user?.id) return;
+        const content = msg.content ?? '';
         const discordId = user?.discord?.discord_id;
-        const mentioned = discordId && /<@!?(\d+)>/.test(msg.content ?? '') && new RegExp(`<@!?${discordId}>`).test(msg.content);
+        const directMention = discordId && /<@!?(\d+)>/.test(content) && new RegExp(`<@!?${discordId}>`).test(content);
+        const everyoneHere = /@(?:everyone|here)(?!\S)/.test(content);
+        const mentioned = directMention || everyoneHere;
         if (mentioned) playMentionSound();
         else playMessageSound();
       }

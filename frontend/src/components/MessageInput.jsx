@@ -94,6 +94,19 @@ function memberDisplayName(m) {
   return m.nickname ?? m.globalName ?? m.username;
 }
 
+const EVERYONE_HERE_OPTIONS = [
+  { id: 'everyone', name: 'everyone', _type: 'everyone' },
+  { id: 'here', name: 'here', _type: 'here' },
+];
+
+function filterEveryoneHere(query) {
+  if (!query) return EVERYONE_HERE_OPTIONS;
+  const q = query.toLowerCase();
+  return EVERYONE_HERE_OPTIONS.filter(
+    (o) => o.name.startsWith(q) || o.name.includes(q)
+  );
+}
+
 function filterRoleMentionCandidates(roles, query) {
   if (!roles?.length) return [];
   const list = roles;
@@ -188,6 +201,13 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
     };
   }, [mention?.kind, mention?.query, guildId]);
 
+  const everyoneHereCandidates = useMemo(
+    () => (mention?.kind === 'user'
+      ? filterEveryoneHere(mention.query)
+      : []),
+    [mention?.kind, mention?.query]
+  );
+
   const roleCandidates = useMemo(
     () => (mention?.kind === 'user'
       ? filterRoleMentionCandidates(guildRoles, mention.query)
@@ -197,10 +217,11 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
 
   const userOrRoleCandidates = useMemo(() => {
     if (mention?.kind !== 'user') return [];
+    const special = everyoneHereCandidates;
     const roles = roleCandidates.map((r) => ({ ...r, _type: 'role' }));
     const users = userCandidates.map((u) => ({ ...u, _type: 'user' }));
-    return [...roles, ...users];
-  }, [mention?.kind, roleCandidates, userCandidates]);
+    return [...special, ...roles, ...users];
+  }, [mention?.kind, everyoneHereCandidates, roleCandidates, userCandidates]);
 
   const isSlashSuggest = mention?.kind === 'slash';
   const activeCandidates = mention?.kind === 'channel' ? channelCandidates
@@ -269,6 +290,8 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
       insertText = item.char ?? `<${item.animated ? 'a' : ''}:${item.name}:${item.id}>`;
     } else if (mention.kind === 'channel') {
       insertText = `<#${item.id}>`;
+    } else if (mention.kind === 'user' && (item._type === 'everyone' || item._type === 'here')) {
+      insertText = `@${item.name}`;
     } else if (mention.kind === 'user' && item._type === 'role') {
       insertText = `<@&${item.id}>`;
     } else {
@@ -477,9 +500,10 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
           ) : (
             activeCandidates.map((m, i) => {
               const isRole = m._type === 'role';
-              const disp = isRole ? m.name : memberDisplayName(m);
+              const isEveryoneHere = m._type === 'everyone' || m._type === 'here';
+              const disp = isRole || isEveryoneHere ? m.name : memberDisplayName(m);
               return (
-                <li key={`${isRole ? 'role-' : 'user-'}${m.id}`}>
+                <li key={`${m._type ?? 'user'}-${m.id}`}>
                   <button
                     type="button"
                     role="option"
@@ -491,7 +515,9 @@ export default function MessageInput({ onSend, channel, channels = [], guildId =
                   >
                     <span className={styles.userSuggestAt}>@</span>
                     <span className={styles.channelSuggestName}>{disp}</span>
-                    {isRole ? (
+                    {isEveryoneHere ? (
+                      <span className={styles.userSuggestHandle}>Mention</span>
+                    ) : isRole ? (
                       <span className={styles.userSuggestHandle}>Role</span>
                     ) : m.username && disp !== m.username ? (
                       <span className={styles.userSuggestHandle}>@{m.username}</span>
