@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Environment and secrets (never commit)
+.env
+.env.local
+.env.*.local
+cookies.txt
+*.pem
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.production
+frontend/.env.production.local
+
+# Build output
+dist/
+build/
+frontend/dist/
+backend/dist/
+
+# Database and session storage
+data/
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Cursor (if present)
+.cursor/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+
+# Docker
+.docker/
+
+# Test and coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Optional: uncomment to exclude lock files (not recommended — keeps builds reproducible)
+# package-lock.json
+# frontend/package-lock.json
+# backend/package-lock.json

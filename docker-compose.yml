@@ -1,0 +1,33 @@
+# discord-bridge — Raspberry Pi 5
+# Usage: docker compose up -d
+# Env: copy backend/.env.example to backend/.env (or project root .env) and fill in values
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Same-origin when using one domain; set for split-host (e.g. https://discordbackend.potatogamer.uk)
+        VITE_API_URL: ${VITE_API_URL:-}
+    image: discord-bridge:latest
+    container_name: discord-bridge
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - discord-bridge-data:/app/data
+    env_file:
+      - backend/.env
+    environment:
+      - NODE_ENV=production
+    # Pi 5: optional resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+volumes:
+  discord-bridge-data:
