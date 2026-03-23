@@ -21,8 +21,8 @@ build/
 frontend/dist/
 backend/dist/
 
-# Database and session storage
-data/
+# Database and session storage (not frontend/src/data)
+/data/
 backend/data/
 *.db
 *.db-journal
