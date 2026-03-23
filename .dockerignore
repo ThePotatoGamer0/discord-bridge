@@ -12,9 +12,8 @@ backend/dist
 .env.*
 !.env.example
 
-# Data (mounted at runtime)
+# Data (mounted at runtime) — only backend/data, not frontend/src/data
 backend/data
-data
 *.db
 
 # Git and IDE
