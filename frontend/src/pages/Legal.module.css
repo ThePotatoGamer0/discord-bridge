@@ -1,0 +1,81 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--bg-secondary);
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-top: 8px;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.content {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  overflow-y: auto;
+}
+
+.content h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 28px;
+  margin-bottom: 8px;
+}
+
+.content h2:first-child {
+  margin-top: 0;
+}
+
+.content p {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.content ul {
+  margin: 8px 0 14px 20px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.content li {
+  margin-bottom: 6px;
+}
+
+.content a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.content a:hover {
+  text-decoration: underline;
+}

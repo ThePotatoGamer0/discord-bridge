@@ -1,0 +1,93 @@
+.pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.hash {
+  color: var(--text-dim);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.channelName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+  padding: 40px;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.loadingMore {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 8px 16px;
+}
+
+.loadMoreBtn {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.loadMoreBtn:hover {
+  color: var(--text-main);
+  border-color: var(--text-dim);
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+.emptyInner {
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.emptyHash {
+  font-size: 4rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 12px;
+  color: var(--ui-border);
+}

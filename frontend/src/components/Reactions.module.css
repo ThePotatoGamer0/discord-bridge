@@ -1,0 +1,78 @@
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  font-size: 0.875rem;
+  color: var(--text-main);
+}
+
+.reaction:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.reaction.reacted {
+  background: rgba(88, 101, 242, 0.15);
+  border-color: rgba(88, 101, 242, 0.5);
+}
+
+.reaction.reacted:hover {
+  background: rgba(88, 101, 242, 0.25);
+}
+
+.emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 8px;
+}
+
+.reaction.reacted .count {
+  color: var(--accent);
+}
+
+/* Hidden until message hover — uses opacity+pointer-events so no layout shift */
+.addReaction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px dashed var(--ui-border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--text-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.reactions:hover .addReaction {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.addReaction:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+  border-style: solid;
+}
